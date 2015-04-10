@@ -1,9 +1,9 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workspace />
   <MonoDevelop.Ide.Workbench ActiveDocument="Assets\InteractWater.cs">
     <Files>
-      <File FileName="Assets\InteractWater.cs" Line="75" Column="55" />
-      <File FileName="Assets\FadeShader.shader" Line="54" Column="35" />
+      <File FileName="Assets\InteractWater.cs" Line="109" Column="10" />
+      <File FileName="..\Drawokio\Assets\Scripts\Room\EndingController.cs" Line="17" Column="3" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

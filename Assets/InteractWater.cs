@@ -2,110 +2,122 @@
 using System.Collections;
 
 public class InteractWater : MonoBehaviour {
-	public Transform meshObject;
-	private SkinnedMeshRenderer mesh;
-	private Vector3[] vertices;
-	private Color[] vertexColors;
-	public Axis upAxis;
 
-	public enum Axis {
-		X,
-		Y,
-		Z
+
+	[System.Serializable]
+	public class FluidObject 
+	{
+		public Transform meshObject;
+		public AxisOrientation MeshAxisLayout;
+		public float MeshScale;
+		public bool Animated = true;
+		//SkinnedMeshRenderer for if the mesh is animated which most likely is the case
+		[HideInInspector]
+		public SkinnedMeshRenderer skin;
+		//Base mesh object
+		[HideInInspector]
+		public Mesh mesh;
+		//Vertices of the mesh
+		[HideInInspector]
+		public Vector3[] vertices;
+		//Vertex colors for the mesh
+		[HideInInspector]
+		public Color[] vertexColors;
+	}
+
+	public FluidObject[] fluidObjects;
+	public int UpdateDelay;
+	private int DelayCount = 0;
+	private bool UpdateWater = true;
+
+	public enum AxisOrientation {
+		XYZ,
+		XZY,
+		YXZ,
+		YZX,
+		ZXY,
+		ZYX
 	};
 
 
 	// Use this for initialization
 	void Start () {
-		mesh = meshObject.gameObject.GetComponent<SkinnedMeshRenderer>();
-		vertices = mesh.sharedMesh.vertices;
-		vertexColors = mesh.sharedMesh.colors;
-		int i = 0;
-		while (i < vertices.Length) {
-			//Debug.Log("Itterated through mesh");
-			vertexColors[i] = new Color(1, 1, 1, 1);
-
-			i++;
+		for (int i = 0; i < fluidObjects.Length; i++) {
+			if(fluidObjects[i].Animated) {
+				fluidObjects[i].mesh = new Mesh ();
+				fluidObjects[i].skin = fluidObjects[i].meshObject.gameObject.GetComponent<SkinnedMeshRenderer>();
+				fluidObjects[i].skin.BakeMesh(fluidObjects[i].mesh);
+				fluidObjects[i].vertices = fluidObjects[i].mesh.vertices;
+				fluidObjects[i].vertexColors = fluidObjects[i].mesh.colors;
+				int j = 0;
+				while (j < fluidObjects[i].vertices.Length) {
+					fluidObjects[i].vertexColors[j] = new Color(1, 1, 1, 1);
+					j++;
+				}
+				fluidObjects[i].skin.sharedMesh.colors = fluidObjects[i].vertexColors;
+			}
 		}
-		mesh.sharedMesh.colors = vertexColors;
-
 		//mesh.MarkDynamic();
 	}
 	
 	// Update is called once per frame
-	void Update () {
-
-		vertices = mesh.sharedMesh.vertices;
-		vertexColors = mesh.sharedMesh.colors;
-		Debug.Log (vertices [0]);
-		Debug.Log (vertices [1]);
-		Vector3 vertexPos2 = meshObject.position + vertices[0];
-		//vertexPos = Quaternion.Inverse(meshObject.rotation) * vertexPos;
-		//Debug.Log (vertexPos2);
-		int i = 0;
-		while (i < vertices.Length) {
-			//Debug.Log("Itterated through mesh");
-			Vector3 vertexPos =  transform.localToWorldMatrix.MultiplyPoint3x4(vertices[i]);
-			Vector3 tempPos = new Vector3(vertexPos.x, vertexPos.y, vertexPos.z);
-			//vertexPos = meshObject.localToWorldMatrix.MultiplyPoint3x4(vertexPos);
-			Quaternion temp = new Quaternion();
-			temp.eulerAngles = new Vector3(90,0,0);
-			vertexPos = temp * vertexPos;
-			//Transform temp = meshObject;
-			//while(temp.parent != null) {
-			//	temp = temp.parent;
-			//	vertexPos = Quaternion.Inverse(temp.rotation) * vertexPos;
-			//}
-			if(upAxis == Axis.X) {
-				if(vertexPos.x < .01f) {
-					vertexColors[i] = new Color(0, 0, 1, 1);
-					//Debug.Log("It worked");
-				} else {
-					vertexColors[i] = new Color(1, 1, 1, 1);
-				}
-			} else if(upAxis == Axis.Y) {
-				if(vertexPos.y < -.6f) {
-					vertexColors[i] = new Color(0, 0, 1, 1);
-					//Debug.Log("It worked");
-				} else {
-					vertexColors[i] = new Color(1, 1, 1, 1);
-				}
-			} else {
-				if(tempPos.y < 0f) {
-					vertexColors[i] = new Color(Mathf.Abs (tempPos.x), Mathf.Abs(tempPos.y), 1, 1);
-					//Debug.Log("It worked");
-				} else {
-					vertexColors[i] = new Color(1, 1, 1, 1);
-				}
+	void LateUpdate () {
+		if (DelayCount == UpdateDelay) {
+			for (int i = 0; i < fluidObjects.Length; i++) {
+				Debug.Log("Updated Mesh");
+				fluidObjects[i].mesh = new Mesh ();
+				fluidObjects[i].skin.BakeMesh (fluidObjects[i].mesh);
+				fluidObjects[i].vertices = fluidObjects[i].mesh.vertices;
+				fluidObjects[i].vertexColors = fluidObjects[i].skin.sharedMesh.colors;
 			}
-
-			i++;
+			DelayCount = 0;
+			UpdateWater = true;
+		} else {
+			Debug.Log("Didn't Update");
+			DelayCount++;
 		}
-		mesh.sharedMesh.colors = vertexColors;
-		/**int i = 0;
-		while (i < vertices.Length) {
-			colors[i] = Color.Lerp(Color.red, Color.green, vertices[i].y);
-			i++;
-		}
-		mesh.mesh.colors = colors;**/
 	}
 
 	void OnTriggerStay(Collider other) {
-		if(other.transform.tag.Equals("water")) {
-			//Debug.Log("Entered water");
-			int i = 0;
-			while (i < vertices.Length) {
-				//Debug.Log("Itterated through mesh");
-				Vector3 vertexPos = meshObject.position + vertices[i];
-				//vertexPos = Quaternion.Inverse(meshObject.rotation) * vertexPos;
+		if (UpdateWater) {
+			if (other.transform.tag.Equals ("water")) {
+				for (int i = 0; i < fluidObjects.Length; i++) {
+					int j = 0;
+					while (j < fluidObjects[i].vertices.Length) {
+						fluidObjects[i].vertices [j] = CorrectAxis(fluidObjects[i].vertices[j], fluidObjects[i].MeshAxisLayout);
+						Vector3 vertexPos = new Vector3 (fluidObjects[i].meshObject.transform.position.x - fluidObjects[i].vertices [j].x * fluidObjects[i].MeshScale, fluidObjects[i].meshObject.transform.position.y - fluidObjects[i].vertices [j].y * fluidObjects[i].MeshScale, fluidObjects[i].meshObject.transform.position.z - fluidObjects[i].vertices [j].z * fluidObjects[i].MeshScale);
 
-				if(other.bounds.Contains(vertexPos)) {
-					vertexColors[i] = new Color(0, 0, 1, 1);
-					//Debug.Log("It worked");
+						if (other.bounds.Contains (vertexPos)) {
+							fluidObjects[i].vertexColors [j] = new Color (0, 0, 1, 1);
+						}
+						j++;
+					}
+						fluidObjects[i].skin.sharedMesh.colors = fluidObjects[i].vertexColors;
+					}
 				}
-				i++;
+				UpdateWater = false;
 			}
-			mesh.sharedMesh.colors = vertexColors;
+	}
+
+	private Vector3 CorrectAxis(Vector3 vertex, AxisOrientation axisLayout) {
+		switch(axisLayout) {
+		case AxisOrientation.XZY:
+			return new Vector3(vertex.x, vertex.z, vertex.y);
+			break;
+		case AxisOrientation.YXZ:
+			return new Vector3(vertex.y, vertex.x, vertex.z);
+			break;
+		case AxisOrientation.YZX:
+			return new Vector3(vertex.y, vertex.z, vertex.x);
+			break;
+		case AxisOrientation.ZXY:
+			return new Vector3(vertex.z, vertex.x, vertex.y);
+			break;
+		case AxisOrientation.ZYX:
+			return new Vector3(vertex.z, vertex.y, vertex.x);
+			break;
+		default:
+			return vertex;
 		}
 	}
 }
