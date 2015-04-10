@@ -1,9 +1,9 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\InteractWater.cs">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\FluidObject.cs">
     <Files>
-      <File FileName="Assets\InteractWater.cs" Line="109" Column="10" />
-      <File FileName="..\Drawokio\Assets\Scripts\Room\EndingController.cs" Line="17" Column="3" />
+      <File FileName="Assets\FluidObject.cs" Line="96" Column="2" />
+      <File FileName="Assets\InteractWater.cs" Line="26" Column="12" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
