@@ -12,7 +12,9 @@ public class FluidObject
 		ZXY,
 		ZYX
 	};
-
+    public ParticleSystem system;
+    public ParticleSystem.CollisionEvent[] collisionEvents = new ParticleSystem.CollisionEvent[16];
+    //public ParticleCollisionEvent[] collisionEvents;
 	public Transform meshObject;
 	public AxisOrientation MeshAxisLayout;
 	public float MeshScale;
@@ -31,6 +33,9 @@ public class FluidObject
 	//Vertex colors for the mesh
 	[HideInInspector]
 	public Color[] vertexColors;
+
+    [HideInInspector]
+    public float waterParticleSize;
 
 	public void InitializeMesh() {
 		if(Animated) {
@@ -93,6 +98,54 @@ public class FluidObject
 			filter.mesh.colors = vertexColors;
 		}
 	}
+
+    public void SetWaterParticleSize(float size)
+    {
+        waterParticleSize = size;
+    }
+
+    public void UpdateWaterCollisionObject(GameObject other)
+    {
+        //int safeLength = system.safeCollisionEventSize;
+        int safeLength = 10;
+        //if (collisionEvents.Length < safeLength)
+            collisionEvents = new ParticleSystem.CollisionEvent[safeLength];
+        int numCollisionEvents = system.GetCollisionEvents(other, collisionEvents);
+
+        int j = 0;
+        while (j < vertices.Length)
+        {
+            vertices[j] = CorrectAxis(vertices[j], MeshAxisLayout);
+            //Vector3 vertexPos = new Vector3 (fluidObjects[i].meshObject.transform.position.x - fluidObjects[i].vertices [j].x * fluidObjects[i].MeshScale, fluidObjects[i].meshObject.transform.position.y - fluidObjects[i].vertices [j].y * fluidObjects[i].MeshScale, fluidObjects[i].meshObject.transform.position.z - fluidObjects[i].vertices [j].z * fluidObjects[i].MeshScale);
+            Vector3 vertexPos;
+            if (Animated)
+            {
+                vertexPos = new Vector3(meshObject.transform.position.x - vertices[j].x * MeshScale, meshObject.transform.position.y - vertices[j].y * MeshScale, meshObject.transform.position.z - vertices[j].z * MeshScale);
+            }
+            else
+            {
+                vertexPos = meshObject.localToWorldMatrix.MultiplyPoint3x4(vertices[j]);
+            }
+            for(int k = 0; k < collisionEvents.Length; k++) {
+                float distance = Mathf.Sqrt(Mathf.Pow((vertexPos.x - collisionEvents[k].intersection.x), 2) +
+                    Mathf.Pow((vertexPos.y - collisionEvents[k].intersection.y), 2) +
+                    Mathf.Pow((vertexPos.z - collisionEvents[k].intersection.z), 2));
+                if (distance < waterParticleSize)
+                {
+                    vertexColors[j] = new Color(0, 0, 1, 1);
+                }
+            }
+            j++;
+        }
+        if (Animated)
+        {
+            skin.sharedMesh.colors = vertexColors;
+        }
+        else
+        {
+            filter.mesh.colors = vertexColors;
+        }
+    }
 
 	private Vector3 CorrectAxis(Vector3 vertex, AxisOrientation axisLayout) {
 		switch(axisLayout) {
